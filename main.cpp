@@ -8,6 +8,14 @@ using std::ifstream;
 #include <stdio.h>
 
 #include "Vect3.h"
+#include "Color.h"
+#include "Eye.h"
+#include "Ray.h"
+#include "LightSource.h"
+#include "Light.h"
+
+
+
 
 using namespace std;
 
@@ -37,12 +45,27 @@ void save_ppm(int width, int height, char* fname, SinglePixel *pixel) {
 
     fclose(fp);
 }
+//------------------------------------------------------------------------------
 
+//Constant Declarations
+const int MAX_CHARS_PER_LINE = 512;
+const int MAX_TOKENS_PER_LINE = 20;
+
+//Variable Declarations
+int line_cnt = 0;
+int token_cnt = 0;
 
 int main (int argc, char *argv[])
 {
 
 //save_ppm(width, height, outputFile, pixelppm); //output to ppm
+
+//-------------START PARSER
+  // create a file-reading object
+  ifstream fin;
+  fin.open(argv[1]); // open a file
+  if (!fin.good()) 
+    return 1; // exit if file not found
 
 	return 0;
 }
