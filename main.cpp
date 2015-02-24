@@ -13,9 +13,8 @@ using std::ifstream;
 #include "Ray.h"
 #include "LightSource.h"
 #include "Light.h"
-
-
-
+#include "Object.h"
+#include "Sphere.h"
 
 using namespace std;
 
@@ -50,10 +49,41 @@ void save_ppm(int width, int height, char* fname, SinglePixel *pixel) {
 //Constant Declarations
 const int MAX_CHARS_PER_LINE = 512;
 const int MAX_TOKENS_PER_LINE = 20;
-
+const int MAX_SPHERES = 14;
+const int MAX_LIGHTS = 9;
+const char* const DELIMITER = " ";
+const char* const DELIMITER2 = "\t";
 //Variable Declarations
 int line_cnt = 0;
 int token_cnt = 0;
+int sphere_cnt = 0;
+int light_cnt = 0;
+
+int near,left,right,bottom,top;
+//resolution
+int nRows, nColumns;
+//background
+double bgRed, bgGreen, bgBlue;
+//ambient color
+double ambRed, ambGreen, ambBlue;
+Color ambientColor = Color();
+char outputFile[50];
+
+//Spheres
+//std::vector<Sphere> v;
+string *sphere_name = new string[MAX_SPHERES];
+char sph_name[MAX_SPHERES][20];
+int sph_posX[MAX_SPHERES], sph_posY[MAX_SPHERES], sph_posZ[MAX_SPHERES];
+double sph_sclX[MAX_SPHERES], sph_sclY[MAX_SPHERES], sph_sclZ[MAX_SPHERES];
+double sph_red[MAX_SPHERES], sph_green[MAX_SPHERES], sph_blue[MAX_SPHERES];
+double sph_K_amb[MAX_SPHERES], sph_K_diff[MAX_SPHERES], sph_K_spec[MAX_SPHERES], sph_K_refl[MAX_SPHERES], sph_n[MAX_SPHERES];
+
+//Lights
+char lt_name[9][20];
+int lt_posX[9], lt_posY[9], lt_posZ[9];
+double lt_red[9], lt_green[9], lt_blue[9];
+int curr_pixel; //index value that changes -- to determine x and y coords of individual pixel
+
 
 int main (int argc, char *argv[])
 {
