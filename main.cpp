@@ -96,6 +96,187 @@ int main (int argc, char *argv[])
   fin.open(argv[1]); // open a file
   if (!fin.good()) 
     return 1; // exit if file not found
+  
+  // read each line of the file
+  while (!fin.eof())
+  {
+    // read an entire line into memory
+    char buf[MAX_CHARS_PER_LINE];
+    fin.getline(buf, MAX_CHARS_PER_LINE);
+    
+    // parse the line into blank-delimited tokens
+    int n = 0; // a for-loop index
+    
+    // array to store memory addresses of the tokens in buf
+    const char* token[MAX_TOKENS_PER_LINE] = {}; // initialize to 0
+    
+    // parse the line
+    token[0] = strtok(buf, DELIMITER); // first token
+    if (token[0]) // zero if line is blank
+    {
+      for (n = 1; n < MAX_TOKENS_PER_LINE; n++)
+      {
+        token[n] = strtok(0, DELIMITER); // subsequent tokens
+        token_cnt = n;
+        if (!token[n]) break; // no more tokens
+      }
+    }
+
+//-------------------------------------------------------
+//check and validate file
+//NEAR
+if ((!strcmp(token[0],"NEAR")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+//LEFT
+else if ((!strcmp(token[0],"LEFT")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+//RIGHT
+else if ((!strcmp(token[0],"RIGHT")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+//BOTTOM
+else if ((!strcmp(token[0],"BOTTOM")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+//TOP
+else if ((!strcmp(token[0],"TOP")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+//RESOLUTION
+else if ((!strcmp(token[0],"RES")) && (token_cnt == 3)) 
+{
+	nRows = atoi(token[1]);
+	nColumns = atoi(token[2]);
+
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+}
+
+//########## fix from here down to count how many spheres
+//SPHERE --> up to 14
+else if ((!strcmp(token[0],"SPHERE")) && (token_cnt == 16)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+	
+	if ((!strcmp(token[0],"SPHERE")))
+	{
+		sphere_cnt++;
+		printf("IS A SPHERE --- %d\n",sphere_cnt);
+
+		//<name>
+		strncpy(sph_name[sphere_cnt],token[1],20);
+		printf("%s\n",sph_name[sphere_cnt]);
+
+		//<pos>
+		sph_posX[sphere_cnt] = atoi(token[2]);
+		sph_posY[sphere_cnt] = atoi(token[3]);
+		sph_posZ[sphere_cnt] = atoi(token[4]);
+		//<scale>
+		sph_sclX[sphere_cnt] = strtod(token[5],NULL);
+		sph_sclY[sphere_cnt] = strtod(token[6],NULL);
+		sph_sclZ[sphere_cnt] = strtod(token[7],NULL);
+		//<color>
+		sph_red[sphere_cnt] = strtod(token[8],NULL);
+		sph_green[sphere_cnt] = strtod(token[9],NULL);
+		sph_blue[sphere_cnt] = strtod(token[10],NULL);
+
+		//<k-values>
+		sph_K_amb[sphere_cnt] = strtod(token[11],NULL);
+		sph_K_diff[sphere_cnt] = strtod(token[12],NULL);
+		sph_K_spec[sphere_cnt] = strtod(token[13],NULL);
+		sph_K_refl[sphere_cnt] = strtod(token[14],NULL);
+
+		//<n-value>
+		sph_n[sphere_cnt] = strtod(token[15],NULL);
+	}
+}
+//########### fix from here down to count how many lights
+//LIGHT --> up to 9
+else if ((!strcmp(token[0],"LIGHT")) && (token_cnt == 8)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+	if ((!strcmp(token[0],"LIGHT")))
+	{
+		light_cnt++;
+		printf("IS A LIGHT --- %d\n",light_cnt);
+
+		//<name>
+		strncpy(lt_name[light_cnt],token[1],20);
+		printf("%s\n",lt_name[light_cnt]);
+
+		//<pos>
+		lt_posX[light_cnt] = atoi(token[2]);
+		lt_posY[light_cnt] = atoi(token[3]);
+		lt_posZ[light_cnt] = atoi(token[4]);
+
+		//<color>
+		lt_red[light_cnt] = strtod(token[5],NULL);
+		lt_green[light_cnt] = strtod(token[6],NULL);
+		lt_blue[light_cnt] = strtod(token[7],NULL);
+	}
+}
+
+//BACKGROUND
+else if ((!strcmp(token[0],"BACK")) && (token_cnt == 4)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+	bgRed = strtod(token[1],NULL);
+	bgGreen = strtod(token[2],NULL);
+	bgBlue = strtod(token[3],NULL);
+
+}
+
+//AMBIENT
+else if ((!strcmp(token[0],"AMBIENT")) && (token_cnt == 4)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+	ambRed = strtod(token[1],NULL);
+	ambGreen = strtod(token[2],NULL);
+	ambBlue = strtod(token[3],NULL);
+	ambientColor.setRed(ambRed);
+	ambientColor.setGreen(ambGreen);
+	ambientColor.setBlue(ambBlue);
+
+
+}
+
+//FILE OUTPUT
+else if ((!strcmp(token[0],"OUTPUT")) && (token_cnt == 2)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+strncpy(outputFile,token[1],20);
+}
+
+else if ((!strcmp(token[0]," ")) || (!strcmp(token[0],"\t")))
+{
+printf("BLANK\n");
+}
+//-------------------------------------------------------
+
+    // process (print) the tokens
+    for (int i = 0; i < n; i++) // n = #of tokens
+      cout << "Token[" << i << "] = " << token[i] << endl;
+    cout << endl;
+
+    line_cnt++;
+  }
+
+
+
+
+
+
+
+
+
+
+//--------------END PARSER
 
 	return 0;
 }
