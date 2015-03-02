@@ -6,6 +6,11 @@ using std::ifstream;
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <cstring>
+
 
 #include "Vect3.h"
 #include "Color.h"
@@ -83,6 +88,59 @@ char lt_name[9][20];
 int lt_posX[9], lt_posY[9], lt_posZ[9];
 double lt_red[9], lt_green[9], lt_blue[9];
 int curr_pixel; //index value that changes -- to determine x and y coords of individual pixel
+
+
+
+
+//returns index of closest intersection to camera
+int closestObjectIndex(vector<double> object_intersections) {
+	int index_of_minimum_value;
+
+	//if no rays hit object
+	if (object_intersections.size() == 0) {
+		return -1;
+	}
+	else if (object_intersections.size() == 1) {
+
+		//if the intersection > 0, then minimum value
+		if (object_intersections.at(0) > 0) {
+			return 0;
+		}
+		//only intersection is negative
+		else{ 
+			return -1;
+		}
+	}
+	else //more than one intersection
+	{
+		//find max value
+		double max = 0;
+			for (int i = 0; i < object_intersections.size(); i++) {
+				if (max < object_intersections.at(i)) {
+					max = object_intersections.at(i);
+				}
+			}
+
+		//find minimum positive value
+			if (max > 0) {
+				// we only want positive intersections
+				for (int index = 0; index < object_intersections.size(); index++) {
+					if (object_intersections.at(index) > 0 && object_intersections.at(index) <= max) {
+						max = object_intersections.at(index);
+						index_of_minimum_value = index;
+					}
+				}
+				
+				return index_of_minimum_value;
+			}
+		else{ //all intersections were negative
+			return -1;
+		}
+	}
+}
+
+
+
 
 
 int main (int argc, char *argv[])
