@@ -51,45 +51,6 @@ void save_ppm(int width, int height, char* fname, SinglePixel *pixel) {
 }
 //------------------------------------------------------------------------------
 
-//Constant Declarations
-const int MAX_CHARS_PER_LINE = 512;
-const int MAX_TOKENS_PER_LINE = 20;
-const int MAX_SPHERES = 14;
-const int MAX_LIGHTS = 9;
-const char* const DELIMITER = " ";
-const char* const DELIMITER2 = "\t";
-//Variable Declarations
-int line_cnt = 0;
-int token_cnt = 0;
-int sphere_cnt = 0;
-int light_cnt = 0;
-
-int near,left,right,bottom,top;
-//resolution
-int nRows, nColumns;
-//background
-double bgRed, bgGreen, bgBlue;
-//ambient color
-double ambRed, ambGreen, ambBlue;
-Color ambientColor = Color();
-char outputFile[50];
-
-//Spheres
-//std::vector<Sphere> v;
-string *sphere_name = new string[MAX_SPHERES];
-char sph_name[MAX_SPHERES][20];
-int sph_posX[MAX_SPHERES], sph_posY[MAX_SPHERES], sph_posZ[MAX_SPHERES];
-double sph_sclX[MAX_SPHERES], sph_sclY[MAX_SPHERES], sph_sclZ[MAX_SPHERES];
-double sph_red[MAX_SPHERES], sph_green[MAX_SPHERES], sph_blue[MAX_SPHERES];
-double sph_K_amb[MAX_SPHERES], sph_K_diff[MAX_SPHERES], sph_K_spec[MAX_SPHERES], sph_K_refl[MAX_SPHERES], sph_n[MAX_SPHERES];
-
-//Lights
-char lt_name[9][20];
-int lt_posX[9], lt_posY[9], lt_posZ[9];
-double lt_red[9], lt_green[9], lt_blue[9];
-int curr_pixel; //index value that changes -- to determine x and y coords of individual pixel
-
-
 
 
 //returns index of closest intersection to camera
@@ -138,6 +99,178 @@ int closestObjectIndex(vector<double> object_intersections) {
 		}
 	}
 }
+
+
+Color getColorAt(Vect3 intersection_position, Vect3 intersection_ray_direction, vector<Object*> scene_objects, int index_of_closest_object, vector <LightSource*> light_sources , double accuracy, double ambientLight, Color ambientColor, double diffuseLight, double specularLight, double reflectiveLight)
+{
+	Color closest_object_color = scene_objects.at(index_of_closest_object) -> getColor();
+	Vect3 closest_object_normal = scene_objects.at(index_of_closest_object) -> getNormalAt(intersection_position);
+	
+	//adding ambient color
+	Color final_color = closest_object_color.colorMultiply(ambientColor);
+
+	//check what ray intersects with first
+	//ray intersects and reflects with another object, and return back to first
+if (closest_object_color.getAlpha() > 0 && closest_object_color.getAlpha() <=1 && reflectiveLight > 0 && reflectiveLight <=1)
+{ //check for specular value and reflect
+	double dot1 = closest_object_normal.dotProd(intersection_ray_direction.negative());
+	Vect3 scalar1 = closest_object_normal.vect3Mult(dot1);
+	Vect3 add1 = scalar1.vect3Add(intersection_ray_direction);
+	Vect3 scalar2 = add1.vect3Mult(2);
+	Vect3 add2 = intersection_ray_direction.negative().vect3Add(scalar2);
+	Vect3 reflection_direction = add2.normalize();
+
+//create reflection ray
+	Ray reflection_ray (intersection_position, reflection_direction);
+	//determine what ray intersects with firstly
+	vector<double> reflection_intersections;
+
+	for (int reflection_index = 0; reflection_index < scene_objects.size(); reflection_index++)
+	{
+		reflection_intersections.push_back(scene_objects.at(reflection_index)->findIntersection(reflection_ray));
+	}
+
+//check for other intersections along path
+		int index_of_closest_object_with_reflection = closestObjectIndex(reflection_intersections);
+
+		if (index_of_closest_object_with_reflection != -1) {
+
+		//reflection ray miss everything else
+			if (reflection_intersections.at(index_of_closest_object_with_reflection) > accuracy) {
+
+			//determine position and direction at point of intersection with reflection ray
+			//ray affects color if reflected
+
+			Vect3 reflection_intersection_position = intersection_position.vect3Add(reflection_direction.vect3Mult(reflection_intersections.at(index_of_closest_object_with_reflection)));
+				Vect3 reflection_intersection_ray_direction = reflection_direction;
+			//Recursive call to get color
+				Color reflection_intersection_color = getColorAt(reflection_intersection_position, reflection_intersection_ray_direction, scene_objects, index_of_closest_object_with_reflection, light_sources, accuracy, ambientLight, ambientColor, diffuseLight, specularLight, reflectiveLight);
+
+				final_color = final_color.colorAdd(reflection_intersection_color.colorScalar(closest_object_color.getAlpha()));
+
+		}
+	}
+
+}
+
+
+
+//loop through all light sources
+	for (int light_index = 0; light_index < light_sources.size(); light_index++)
+	{
+		Vect3 light_direction = light_sources.at(light_index)->getLightPosition().vect3Add(intersection_position.negative()).normalize();
+
+		float cosine_angle = closest_object_normal.dotProd(light_direction);
+
+		if (cosine_angle > 0)
+		{
+			//test for shadows 
+			//find distance from intersection point to light source
+			bool shadowed = false;
+			Vect3 distance_to_light = light_sources.at(light_index)-> getLightPosition().vect3Add(intersection_position.negative());
+
+			float distance_to_light_magnitude = distance_to_light.magnitude();
+			//create ray from intersection to light source
+			Ray shadow_ray (intersection_position, light_sources.at(light_index)->getLightPosition().vect3Add(intersection_position.negative()).normalize());
+			vector<double>secondary_intersections;
+
+			for (int object_index = 0; object_index< scene_objects.size() && shadowed == false; object_index++)
+			{
+				secondary_intersections.push_back(scene_objects.at(object_index)->findIntersection(shadow_ray));
+			}
+
+//loop through secondary intersections, and if it is less than distance to light source, then shadow
+			for (int c = 0; c<secondary_intersections.size(); c++)
+			{
+				if (secondary_intersections.at(c) > accuracy)
+				{
+					if (secondary_intersections.at(c) <= distance_to_light_magnitude)
+					{
+						shadowed = true;
+					}
+						break;
+				}
+			
+			}
+			//no need for shadow
+			if (shadowed == false)
+			{
+				final_color = final_color.colorAdd(closest_object_color.colorMultiply(light_sources.at(light_index)->getColor()).colorScalar(cosine_angle));
+
+				if (closest_object_color.getAlpha() > 0 && closest_object_color.getAlpha()<=1)
+				{
+					double dot1 = closest_object_normal.dotProd(intersection_ray_direction.negative());
+					Vect3 scalar1 = closest_object_normal.vect3Mult(dot1);
+					Vect3 add1 = scalar1.vect3Add(intersection_ray_direction);
+					Vect3 scalar2 = add1.vect3Mult(2);
+					Vect3 add2 = intersection_ray_direction.negative().vect3Add(scalar2);
+					Vect3 reflection_direction = add2.normalize();
+						//glm::vec4 spec (0,0,0,1);
+					double specular = reflection_direction.dotProd(light_direction);
+					if (specular > 0)
+					{
+						specular = pow(specular, 10);
+						final_color = final_color.colorAdd(light_sources.at(light_index)->getColor().colorScalar(specular*specularLight*closest_object_color.getAlpha()));
+					}
+				}
+			}
+
+		}
+	}
+//NEED TO CLIP
+return final_color;
+}
+
+
+
+
+
+
+
+
+
+//Constant Declarations
+const int MAX_CHARS_PER_LINE = 512;
+const int MAX_TOKENS_PER_LINE = 20;
+const int MAX_SPHERES = 14;
+const int MAX_LIGHTS = 9;
+const char* const DELIMITER = " ";
+const char* const DELIMITER2 = "\t";
+//Variable Declarations
+int line_cnt = 0;
+int token_cnt = 0;
+int sphere_cnt = 0;
+int light_cnt = 0;
+
+int near,left,right,bottom,top;
+//resolution
+int nRows, nColumns;
+//background
+double bgRed, bgGreen, bgBlue;
+//ambient color
+double ambRed, ambGreen, ambBlue;
+Color ambientColor = Color();
+char outputFile[50];
+
+//Spheres
+//std::vector<Sphere> v;
+string *sphere_name = new string[MAX_SPHERES];
+char sph_name[MAX_SPHERES][20];
+int sph_posX[MAX_SPHERES], sph_posY[MAX_SPHERES], sph_posZ[MAX_SPHERES];
+double sph_sclX[MAX_SPHERES], sph_sclY[MAX_SPHERES], sph_sclZ[MAX_SPHERES];
+double sph_red[MAX_SPHERES], sph_green[MAX_SPHERES], sph_blue[MAX_SPHERES];
+double sph_K_amb[MAX_SPHERES], sph_K_diff[MAX_SPHERES], sph_K_spec[MAX_SPHERES], sph_K_refl[MAX_SPHERES], sph_n[MAX_SPHERES];
+
+//Lights
+char lt_name[9][20];
+int lt_posX[9], lt_posY[9], lt_posZ[9];
+double lt_red[9], lt_green[9], lt_blue[9];
+int curr_pixel; //index value that changes -- to determine x and y coords of individual pixel
+
+
+
+
+
 
 
 
