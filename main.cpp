@@ -459,15 +459,65 @@ printf("BLANK\n");
   }
 
 
-
-
-
-
-
-
-
-
 //--------------END PARSER
+
+
+  cout << "rendering ..." << endl;
+
+clock_t t1, t2;
+t1 = clock();
+
+	int dpi = 72;
+	int width = nRows;
+	int height = nColumns;
+	int n = width*height;
+	SinglePixel *pixels = new SinglePixel[n];
+	SinglePixel *pixelppm = new SinglePixel[n];
+	double aspectratio = (double)width/(double)height;
+	double accuracy = 0.000001; //when ray intersects with sphere, ensure intersection is on outside 
+
+	Vect3 O (0,0,0);
+	Vect3 X (1,0,0);
+	Vect3 Y (0,1,0);
+	Vect3 Z (0,0,1);
+	
+	Light ambientLt(O,ambientColor);
+	
+	//change here
+	double ambientLight = 1;
+	double specularLight = 1;
+	double diffuseLight = 1;
+	double reflectiveLight = 1;
+
+
+	Vect3 campos (0+accuracy, 0, -30);
+	//create direction of camera
+	Vect3 look_at (0, 0, 0);
+	Vect3 diff_btw (campos.getVectX() - look_at.getVectX(), campos.getVectY() - look_at.getVectY(), campos.getVectZ() - look_at.getVectZ());
+
+	Vect3 camdir = diff_btw.negative().normalize();
+	Vect3 camright = Y.crossProd(camdir).normalize();
+	Vect3 camdown = camright.crossProd(camdir);
+	Eye scene_cam (campos, camdir, camright, camdown); //create camera
+
+	//pushes lights in scene into vector of light sources
+	std::vector<Light*> lights;
+	vector<LightSource*> light_sources;
+	for (unsigned int i = 1; i <= light_cnt; i++)
+	{
+		Light *new_Light = new Light (Vect3(lt_posX[i],lt_posY[i],lt_posZ[i]), Color(lt_red[i], lt_green[i], lt_blue[i], 0));
+		light_sources.push_back(dynamic_cast<LightSource*>(new_Light));
+	}
+
+	//create spheres
+	std::vector<Sphere*> spheres;
+	vector<Object*> scene_objects;
+	for (unsigned int i = 1; i <= sphere_cnt; i++)
+	{
+		Sphere *new_Sphere = new Sphere (Vect3(sph_posX[i],sph_posY[i],sph_posZ[i]), sph_sclX[i], Color(sph_red[i],sph_green[i],sph_blue[i],0.5),sph_K_amb[i],sph_K_diff[i],sph_K_spec[i], sph_K_refl[i]);
+		spheres.push_back(new_Sphere);
+		scene_objects.push_back(dynamic_cast<Object*>(new_Sphere));
+	}
 
 	return 0;
 }
