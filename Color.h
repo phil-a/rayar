@@ -50,7 +50,29 @@ public:
 		return Color ((red + color.getRed()/2),(green + color.getGreen()/2), (blue + color.getBlue()/2), alpha);
 	}
 
-//
+//Clip color to not exceed certain values
+	Color clip()
+	{
+		double all_light = red + green + blue;
+		double excess_light = all_light - 3;
+		if (excess_light > 0)
+		{
+			red = red + excess_light*(red/all_light);
+			green = green + excess_light*(green/all_light);
+			blue = blue + excess_light*(blue/all_light);
+
+		}
+		if (red > 1) {red = 1;}
+		if (green> 1) {green = 1;}
+		if (blue > 1) {blue = 1;}
+
+		if (red < 0) {red = 0;}
+		if (green<  0) {green = 0;}
+		if (blue < 0) {blue = 0;}
+
+		return Color (red, green, blue, alpha);
+
+	}
 };
 
 

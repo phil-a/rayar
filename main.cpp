@@ -217,8 +217,7 @@ if (closest_object_color.getAlpha() > 0 && closest_object_color.getAlpha() <=1 &
 
 		}
 	}
-//NEED TO CLIP
-return final_color;
+return final_color.clip();
 }
 
 
@@ -608,6 +607,15 @@ int curr_pixel;
 		}
 	}
 }
+
+save_ppm(width, height, outputFile, pixelppm); //output to ppm
+
+t2 = clock();
+float diff = ((float)t2 - (float)t1)/100000000;
+delete pixels;
+
+cout << diff << " seconds" << endl;
+
 
 
 	return 0;
