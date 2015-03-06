@@ -54,4 +54,4 @@ $ make
 $ ./rayar testSpecular.txt
 ```
 This will create a .ppm file in the current directory and name it as the string that follows "OUTPUT" in the file (in our example it is "testSpecular.ppm"). The current implementation of the raytracer produces an image that looks like the following:
-![alt tag](http://www.alekseev.io/misc/testSpecular.ppm)
+![alt tag](http://www.alekseev.io/misc/testSpecular.png)
