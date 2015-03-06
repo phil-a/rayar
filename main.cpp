@@ -519,5 +519,96 @@ t1 = clock();
 		scene_objects.push_back(dynamic_cast<Object*>(new_Sphere));
 	}
 
+
+
+
+int curr_pixel;
+	double xamnt, yamnt;
+
+//start from left to right of each pixel
+	for (int x = 0; x < width; x++) {
+	//start from top to bottom of each pixel
+		for (int y = 0; y < height; y++) {		
+	//need to return a color
+			curr_pixel = y*width + x;
+
+
+		//create view angle of camera
+		if (width > height) {//image is wider than tall
+				xamnt = ((x+0.5)/width)*aspectratio - (((width-height)/(double)height)/2);
+				yamnt = ((height - y) + 0.5)/height;		
+		}
+		else if (height > width) 		//image is taller than wide
+		{
+			xamnt = (x + 0.5)/ width;
+			yamnt = (((height - y) + 0.5)/height)/aspectratio - (((height - width)/(double)width)/2);
+		}
+		else //image is same height and width
+		{
+				xamnt = (x + 0.5)/width;
+				yamnt = ((height - y) + 0.5)/height;
+		}
+
+
+
+		xamnt = (x + 0.5)/width;
+		yamnt = ((height - y) + 0.5)/height;
+
+		Vect3 cam_ray_origin = scene_cam.getEyePosition(); //return camera origin
+		Vect3 cam_ray_direction = camdir.vect3Add(camright.vect3Mult(xamnt - 0.5).vect3Add(camdown.vect3Mult(yamnt - 0.5))).normalize();
+
+		Ray cam_ray (cam_ray_origin, cam_ray_direction);//goes through specific x,y pixel into scene and looks for intersections with objects
+
+		vector <double> intersections;
+
+		//want to loop through scene and determine if ray intersects with any objects in scene
+		for (int index = 0; index < scene_objects.size(); index++) {
+			//loops through each object, finds intersection with camera ray, and pushes into intersections
+		intersections.push_back(scene_objects.at(index)->findIntersection(cam_ray));
+		}
+
+		//returns -1, 0, or 1
+		int index_of_closest_object = closestObjectIndex(intersections);
+		//PRINT data of raytracer
+		//cout <<  index_of_closest_object;
+
+		//Background color
+		//ray missed so paint black
+		if (index_of_closest_object == -1) {
+
+			pixels[curr_pixel].r = bgRed;
+			pixels[curr_pixel].g = bgGreen;
+			pixels[curr_pixel].b = bgBlue;
+
+			pixelppm[curr_pixel].r = bgRed;
+			pixelppm[curr_pixel].g = bgGreen;
+			pixelppm[curr_pixel].b = bgBlue;
+		}
+		
+		//index is an object in scene
+		else
+		{
+			if (intersections.at(index_of_closest_object) > accuracy)
+			{
+				//find position and direction at point of intersection
+				Vect3 intersection_position = cam_ray_origin.vect3Add(cam_ray_direction.vect3Mult(intersections.at(index_of_closest_object)));
+				Vect3 intersection_ray_direction = cam_ray_direction;
+
+
+				Color intersection_color = getColorAt(intersection_position, intersection_ray_direction, scene_objects, index_of_closest_object, light_sources ,accuracy, ambientLight, ambientColor, diffuseLight, specularLight, reflectiveLight);
+				//need a function for specific color of intersection
+				pixels[curr_pixel].r = intersection_color.getRed();
+				pixels[curr_pixel].g = intersection_color.getGreen();
+				pixels[curr_pixel].b = intersection_color.getBlue();
+
+				pixelppm[curr_pixel].r = intersection_color.getRed();
+				pixelppm[curr_pixel].g = intersection_color.getGreen();
+				pixelppm[curr_pixel].b = intersection_color.getBlue();
+			}
+		}
+	}
+}
+
+
 	return 0;
 }
