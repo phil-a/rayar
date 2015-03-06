@@ -3,6 +3,7 @@ using std::cout;
 using std::endl;
 #include <fstream>
 using std::ifstream;
+#include <sstream>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,6 +12,7 @@ using std::ifstream;
 #include <string>
 #include <cstring>
 
+#include <limits>
 
 #include "Vect3.h"
 #include "Color.h"
@@ -47,13 +49,35 @@ void save_ppm(int width, int height, char* fname, SinglePixel *pixel) {
   fprintf(fp, "%d %d\n", width, height);
   fprintf(fp, "%d\n", maxVal);
 
-    fclose(fp);
+
+
+
+
+//fix inverted picture for ppm image
+for (int y = w*h-(w); y > -1; y = y-w)
+{
+	for (int x = w*h-(w); x < w*h; x++)
+	{
+	SinglePixel pix = pixel[x];
+		
+		unsigned char red = (pixel[x].r)*255;
+		unsigned char green = (pixel[x].g)*255;
+		unsigned char blue = (pixel[x].b)*255;
+		
+		unsigned char color[3] = {red,green,blue};
+		
+		fwrite(color,1,3,fp);
+	}
+	h--;
+}
+
+  fclose(fp);
 }
 //------------------------------------------------------------------------------
 
 
 
-//returns index of closest intersection to camera
+//returns index of closest intersection to eye
 int closestObjectIndex(vector<double> object_intersections) {
 	int index_of_minimum_value;
 
@@ -489,15 +513,15 @@ t1 = clock();
 	double reflectiveLight = 1;
 
 
-	Vect3 campos (0+accuracy, 0, -30);
-	//create direction of camera
+	Vect3 eyepos (0+accuracy, 0, -30);
+	//create direction of eye
 	Vect3 look_at (0, 0, 0);
-	Vect3 diff_btw (campos.getVectX() - look_at.getVectX(), campos.getVectY() - look_at.getVectY(), campos.getVectZ() - look_at.getVectZ());
+	Vect3 diff_btw (eyepos.getVectX() - look_at.getVectX(), eyepos.getVectY() - look_at.getVectY(), eyepos.getVectZ() - look_at.getVectZ());
 
-	Vect3 camdir = diff_btw.negative().normalize();
-	Vect3 camright = Y.crossProd(camdir).normalize();
-	Vect3 camdown = camright.crossProd(camdir);
-	Eye scene_cam (campos, camdir, camright, camdown); //create camera
+	Vect3 eyedir = diff_btw.negative().normalize();
+	Vect3 eyeright = Y.crossProd(eyedir).normalize();
+	Vect3 eyedown = eyeright.crossProd(eyedir);
+	Eye scene_eye (eyepos, eyedir, eyeright, eyedown); //create eye
 
 	//pushes lights in scene into vector of light sources
 	std::vector<Light*> lights;
@@ -532,7 +556,7 @@ int curr_pixel;
 			curr_pixel = y*width + x;
 
 
-		//create view angle of camera
+		//create view angle of eye
 		if (width > height) {//image is wider than tall
 				xamnt = ((x+0.5)/width)*aspectratio - (((width-height)/(double)height)/2);
 				yamnt = ((height - y) + 0.5)/height;		
@@ -553,17 +577,17 @@ int curr_pixel;
 		xamnt = (x + 0.5)/width;
 		yamnt = ((height - y) + 0.5)/height;
 
-		Vect3 cam_ray_origin = scene_cam.getEyePosition(); //return camera origin
-		Vect3 cam_ray_direction = camdir.vect3Add(camright.vect3Mult(xamnt - 0.5).vect3Add(camdown.vect3Mult(yamnt - 0.5))).normalize();
+		Vect3 eye_ray_origin = scene_eye.getEyePosition(); //return eye origin
+		Vect3 eye_ray_direction = eyedir.vect3Add(eyeright.vect3Mult(xamnt - 0.5).vect3Add(eyedown.vect3Mult(yamnt - 0.5))).normalize();
 
-		Ray cam_ray (cam_ray_origin, cam_ray_direction);//goes through specific x,y pixel into scene and looks for intersections with objects
+		Ray eye_ray (eye_ray_origin, eye_ray_direction);//goes through specific x,y pixel into scene and looks for intersections with objects
 
 		vector <double> intersections;
 
 		//want to loop through scene and determine if ray intersects with any objects in scene
 		for (int index = 0; index < scene_objects.size(); index++) {
-			//loops through each object, finds intersection with camera ray, and pushes into intersections
-		intersections.push_back(scene_objects.at(index)->findIntersection(cam_ray));
+			//loops through each object, finds intersection with eye ray, and pushes into intersections
+		intersections.push_back(scene_objects.at(index)->findIntersection(eye_ray));
 		}
 
 		//returns -1, 0, or 1
@@ -590,8 +614,8 @@ int curr_pixel;
 			if (intersections.at(index_of_closest_object) > accuracy)
 			{
 				//find position and direction at point of intersection
-				Vect3 intersection_position = cam_ray_origin.vect3Add(cam_ray_direction.vect3Mult(intersections.at(index_of_closest_object)));
-				Vect3 intersection_ray_direction = cam_ray_direction;
+				Vect3 intersection_position = eye_ray_origin.vect3Add(eye_ray_direction.vect3Mult(intersections.at(index_of_closest_object)));
+				Vect3 intersection_ray_direction = eye_ray_direction;
 
 
 				Color intersection_color = getColorAt(intersection_position, intersection_ray_direction, scene_objects, index_of_closest_object, light_sources ,accuracy, ambientLight, ambientColor, diffuseLight, specularLight, reflectiveLight);
