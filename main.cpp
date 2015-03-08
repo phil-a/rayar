@@ -11,6 +11,7 @@ using std::ifstream;
 #include <cmath>
 #include <string>
 #include <cstring>
+#include <math.h>
 
 #include <limits>
 
@@ -22,6 +23,8 @@ using std::ifstream;
 #include "Light.h"
 #include "Object.h"
 #include "Sphere.h"
+#include "Plane.h"
+
 
 using namespace std;
 
@@ -130,6 +133,28 @@ Color getColorAt(Vect3 intersection_position, Vect3 intersection_ray_direction, 
 	Color closest_object_color = scene_objects.at(index_of_closest_object) -> getColor();
 	Vect3 closest_object_normal = scene_objects.at(index_of_closest_object) -> getNormalAt(intersection_position);
 	
+
+	if (closest_object_color.getAlpha() == 2) {
+		// checkered/tile floor pattern
+		
+		int square = (int)floor(intersection_position.getVectX()) + (int)floor(intersection_position.getVectZ());
+		
+		if ((square % 2) == 0) {
+			// black tile
+			closest_object_color.setRed(0);
+			closest_object_color.setGreen(0);
+			closest_object_color.setBlue(0);
+		}
+		else {
+			// white tile
+			closest_object_color.setRed(1);
+			closest_object_color.setGreen(1);
+			closest_object_color.setRed(1);
+		}
+	}
+	
+
+
 	//adding ambient color
 	Color final_color = closest_object_color.colorMultiply(ambientColor);
 
@@ -248,14 +273,13 @@ return final_color.clip();
 
 
 
-
-
-
+Color tile_floor (1, 1, 1, 2);
 
 //Constant Declarations
 const int MAX_CHARS_PER_LINE = 512;
 const int MAX_TOKENS_PER_LINE = 20;
 const int MAX_SPHERES = 14;
+const int MAX_PLANES = 14;
 const int MAX_LIGHTS = 9;
 const char* const DELIMITER = " ";
 const char* const DELIMITER2 = "\t";
@@ -263,6 +287,7 @@ const char* const DELIMITER2 = "\t";
 int line_cnt = 0;
 int token_cnt = 0;
 int sphere_cnt = 0;
+int plane_cnt = 0;
 int light_cnt = 0;
 
 int near,left,right,bottom,top;
@@ -283,6 +308,16 @@ int sph_posX[MAX_SPHERES], sph_posY[MAX_SPHERES], sph_posZ[MAX_SPHERES];
 double sph_sclX[MAX_SPHERES], sph_sclY[MAX_SPHERES], sph_sclZ[MAX_SPHERES];
 double sph_red[MAX_SPHERES], sph_green[MAX_SPHERES], sph_blue[MAX_SPHERES];
 double sph_K_amb[MAX_SPHERES], sph_K_diff[MAX_SPHERES], sph_K_spec[MAX_SPHERES], sph_K_refl[MAX_SPHERES], sph_n[MAX_SPHERES];
+
+//Planes
+//std::vector<Plane> v;
+string *plane_name = new string[MAX_PLANES];
+char pln_name[MAX_PLANES][20];
+int pln_posX[MAX_PLANES], pln_posY[MAX_PLANES], pln_posZ[MAX_PLANES];
+double pln_sclX[MAX_PLANES], pln_sclY[MAX_PLANES], pln_sclZ[MAX_PLANES];
+double pln_red[MAX_PLANES], pln_green[MAX_PLANES], pln_blue[MAX_PLANES];
+double pln_K_amb[MAX_PLANES], pln_K_diff[MAX_PLANES], pln_K_spec[MAX_PLANES], pln_K_refl[MAX_PLANES], pln_n[MAX_PLANES];
+double pln_Distance[MAX_PLANES];
 
 //Lights
 char lt_name[9][20];
@@ -410,6 +445,49 @@ else if ((!strcmp(token[0],"SPHERE")) && (token_cnt == 16))
 		sph_n[sphere_cnt] = strtod(token[15],NULL);
 	}
 }
+
+
+//########## fix from here down to count how many planes
+//PLANE --> up to 14
+else if ((!strcmp(token[0],"PLANE")) && (token_cnt == 16)) 
+{
+	printf("Correct!! line#: %d, tokens#: %d \n", line_cnt, token_cnt);
+	
+	if ((!strcmp(token[0],"PLANE")))
+	{
+		sphere_cnt++;
+		printf("IS A PLANE --- %d\n",plane_cnt);
+
+		//<name>
+		strncpy(pln_name[plane_cnt],token[1],20);
+		printf("%s\n",pln_name[plane_cnt]);
+
+		//<pos>
+		pln_posX[plane_cnt] = atoi(token[2]);
+		pln_posY[plane_cnt] = atoi(token[3]);
+		pln_posZ[plane_cnt] = atoi(token[4]);
+		//<scale>
+		pln_sclX[plane_cnt] = strtod(token[5],NULL);
+		pln_sclY[plane_cnt] = strtod(token[6],NULL);
+		pln_sclZ[plane_cnt] = strtod(token[7],NULL);
+		pln_Distance[plane_cnt] = pln_sclY[plane_cnt];
+		//<color>
+		pln_red[plane_cnt] = strtod(token[8],NULL);
+		pln_green[plane_cnt] = strtod(token[9],NULL);
+		pln_blue[plane_cnt] = strtod(token[10],NULL);
+
+		//<k-values>
+		pln_K_amb[plane_cnt] = strtod(token[11],NULL);
+		pln_K_diff[plane_cnt] = strtod(token[12],NULL);
+		pln_K_spec[plane_cnt] = strtod(token[13],NULL);
+		pln_K_refl[plane_cnt] = strtod(token[14],NULL);
+
+		//<n-value>
+		pln_n[plane_cnt] = strtod(token[15],NULL);
+	}
+}
+
+
 //########### fix from here down to count how many lights
 //LIGHT --> up to 9
 else if ((!strcmp(token[0],"LIGHT")) && (token_cnt == 8)) 
@@ -532,14 +610,24 @@ t1 = clock();
 		light_sources.push_back(dynamic_cast<LightSource*>(new_Light));
 	}
 
+	vector<Object*> scene_objects;
+
 	//create spheres
 	std::vector<Sphere*> spheres;
-	vector<Object*> scene_objects;
 	for (unsigned int i = 1; i <= sphere_cnt; i++)
 	{
 		Sphere *new_Sphere = new Sphere (Vect3(sph_posX[i],sph_posY[i],sph_posZ[i]), sph_sclX[i], Color(sph_red[i],sph_green[i],sph_blue[i],0.5),sph_K_amb[i],sph_K_diff[i],sph_K_spec[i], sph_K_refl[i]);
 		spheres.push_back(new_Sphere);
 		scene_objects.push_back(dynamic_cast<Object*>(new_Sphere));
+	}
+
+		//create planes
+	std::vector<Plane*> planes;
+	for (unsigned int i = 1; i <= plane_cnt; i++)
+	{
+		Plane *new_Plane = new Plane (Vect3(pln_posX[i],pln_posY[i],pln_posZ[i]), pln_Distance[i], Color(pln_red[i],pln_green[i],pln_blue[i],2));
+		planes.push_back(new_Plane);
+		scene_objects.push_back(dynamic_cast<Object*>(new_Plane));
 	}
 
 

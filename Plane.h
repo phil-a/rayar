@@ -15,14 +15,14 @@ class Plane : public Object {
 	
 	Plane ();
 	
-	Plane (double, Vect3, Color);
+	Plane (Vect3, double, Color);
 	
 	// method functions
 	double getDistance () { return distance; }
 	Vect3 getNormal () { return normal; }
 	virtual Color getColor () { return color; }
 	
-	virtual Vect3 getNormalAtPoint(Vect point) {
+	virtual Vect3 getNormalAtPoint(Vect3 point) {
 		return normal;
 	}
 	
@@ -48,9 +48,9 @@ Plane::Plane () {
 	color = Color(0.5,0.5,0.5, 0);
 }
 
-Plane::Plane (double dv, Vect nv, Color cv) {
-	distance = dv;
+Plane::Plane (Vect3 nv, double dv, Color cv) {
 	normal = nv;
+	distance = dv;
 	color = cv;
 }
 
